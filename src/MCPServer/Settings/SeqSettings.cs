@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MCPServer.Settings;
+namespace McpServer.Settings;
 
 public class SeqSettings
 {

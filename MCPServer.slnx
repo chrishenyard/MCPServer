@@ -2,5 +2,5 @@
   <Folder Name="/Solution Items/">
     <File Path="Directory.Packages.props" />
   </Folder>
-  <Project Path="src/MCPServer/MCPServer.csproj" />
+  <Project Path="src/McpServer/McpServer.csproj" />
 </Solution>

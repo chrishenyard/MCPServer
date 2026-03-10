@@ -1,4 +1,5 @@
-using MCPServer.Configuration;
+using McpServer;
+using McpServer.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,11 +19,19 @@ builder
 
 var configuration = builder.Configuration;
 
+builder.Services
+    .AddTelemetry(configuration)
+    .AddExceptionHandler<GlobalExceptionHandler>()
+    .AddProblemDetails()
+    .AddHttp(configuration)
+    .AddServices();
+
 var app = builder.Build();
 
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseExceptionHandler();
+app.MapMcp();
 
 await app.RunAsync();
 

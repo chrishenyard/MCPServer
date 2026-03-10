@@ -1,14 +1,57 @@
-﻿using MCPServer.Settings;
+﻿using McpServer.Services;
+using McpServer.Settings;
+using Microsoft.Extensions.Http.Resilience;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Polly;
 
-namespace MCPServer.Configuration;
+namespace McpServer.Configuration;
 
 public static class ServiceExtensions
 {
+    public static IServiceCollection AddHttp(
+        this IServiceCollection services,
+        IConfiguration config)
+    {
+        var settings = config
+            .GetSection(CSharpCodeSettings.Section)
+            .Get<CSharpCodeSettings>()!;
+
+        services.AddHttpClient("CSharpCodeService", client =>
+        {
+            client.BaseAddress = new Uri(settings.SearchEndpoint);
+        })
+        .AddResilienceHandler("custom-pipeline", builder =>
+        {
+            builder.AddRetry(new HttpRetryStrategyOptions
+            {
+                MaxRetryAttempts = 3,
+                Delay = TimeSpan.FromSeconds(1),
+                BackoffType = DelayBackoffType.Exponential
+            })
+            .AddTimeout(new HttpTimeoutStrategyOptions
+            {
+                Timeout = TimeSpan.FromSeconds(5) // Max duration for each attempt
+            });
+        });
+
+        return services;
+    }
+
+    public static IServiceCollection AddSettings(this IServiceCollection services)
+    {
+        services
+           .AddOptions<CSharpCodeSettings>()
+           .BindConfiguration(CSharpCodeSettings.Section)
+           .ValidateDataAnnotations()
+           .ValidateOnStart();
+
+        return services;
+    }
+
     public static IServiceCollection AddTelemetry(
         this IServiceCollection services,
         IConfiguration config)
@@ -84,5 +127,16 @@ public static class ServiceExtensions
         builder.Configuration.AddConfiguration(configuration);
 
         return builder;
+    }
+
+    public static IServiceCollection AddServices(this IServiceCollection services)
+    {
+        services.AddMcpServer()
+            .WithHttpTransport()
+            .WithToolsFromAssembly();
+
+        services.AddSingleton<CSharpCodeService>();
+
+        return services;
     }
 }

@@ -5,8 +5,13 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>6487fe4d-3e07-4411-9578-2c26eb2cce4c</UserSecretsId>
+	<SelfContained>true</SelfContained>
+	<PublishSelfContained>true</PublishSelfContained>
+	<PublishSingleFile>true</PublishSingleFile>
+	<RuntimeIdentifiers>win-x64;win-arm64;osx-arm64;linux-x64;linux-arm64;linux-musl-x64</RuntimeIdentifiers>
 	<PublishAot>true</PublishAot>
-	<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+	<InvariantGlobalization>true</InvariantGlobalization>
+	<IsTrimmable>true</IsTrimmable>
   </PropertyGroup>
 
 <ItemGroup>
@@ -14,19 +19,12 @@
 	<PackageReference Include="Microsoft.Extensions.Http.Resilience" />
 	<PackageReference Include="ModelContextProtocol.AspNetCore" />
 	<PackageReference Include="Newtonsoft.Json" />
-	<PackageReference Include="OpenTelemetry.Exporter.Console" />
-	<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
-	<PackageReference Include="OpenTelemetry.Extensions.Hosting" />
-	<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" />
-	<PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" />
-	<PackageReference Include="OpenTelemetry.Instrumentation.Http" />
-	<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
-	<PackageReference Include="Seq.App.OTelMetrics" />
 	<PackageReference Include="Serilog" />
 	<PackageReference Include="Serilog.AspNetCore" />
+	<PackageReference Include="Serilog.Extensions.Logging" />
+	<PackageReference Include="Serilog.Settings.Configuration" />
 	<PackageReference Include="Serilog.Sinks.Console" />
-	<PackageReference Include="Serilog.Sinks.Seq" />
-	<PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" />
-  </ItemGroup>
+	<PackageReference Include="Serilog.Sinks.File" />
+</ItemGroup>
 
 </Project>

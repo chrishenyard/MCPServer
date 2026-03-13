@@ -1,12 +1,9 @@
-﻿using McpServer.Services;
+﻿using McpServer.McpTools;
+using McpServer.Services;
 using McpServer.Settings;
 using Microsoft.Extensions.Http.Resilience;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Logs;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Resources;
-using OpenTelemetry.Trace;
 using Polly;
+using Serilog;
 
 namespace McpServer.Configuration;
 
@@ -49,69 +46,6 @@ public static class ServiceExtensions
         return services;
     }
 
-    public static IServiceCollection AddTelemetry(
-        this IServiceCollection services,
-        IConfiguration config)
-    {
-        var seqSettings = config.GetSection("SeqSettings")
-            .Get<SeqSettings>()!;
-
-        services.AddOpenTelemetry()
-            .ConfigureResource(resource => resource
-                .AddService("MCPSearch")
-                .AddAttributes(new Dictionary<string, object>
-                {
-                    ["deployment.environment"] = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production"
-                }))
-            .WithMetrics(metrics => metrics
-                .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation()
-                .AddRuntimeInstrumentation()
-                .AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(seqSettings.ServerUrl);
-                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
-                }))
-            .WithTracing(tracing => tracing
-                .AddAspNetCoreInstrumentation(options =>
-                {
-                    options.RecordException = true;
-                })
-                .AddEntityFrameworkCoreInstrumentation(options =>
-                {
-                    options.EnrichWithIDbCommand = (activity, command) =>
-                    {
-                        activity.SetTag("db.statement", command.CommandText);
-                    };
-                })
-                .AddHttpClientInstrumentation(options =>
-                {
-                    options.RecordException = true;
-                    options.FilterHttpRequestMessage = (httpRequestMessage) =>
-                    {
-                        // Ensure Ollama requests are captured
-                        return true;
-                    };
-                })
-                .AddSource("OllamaSharp")
-                .AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(seqSettings.ServerUrl);
-                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
-                }))
-            .WithLogging(logging => logging
-                .AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(seqSettings.ServerUrl);
-                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
-                }));
-
-        return services;
-    }
-
     public static WebApplicationBuilder AddConfiguration(this WebApplicationBuilder builder)
     {
         var configuration = new ConfigurationBuilder()
@@ -123,6 +57,16 @@ public static class ServiceExtensions
 
         builder.Configuration.AddConfiguration(configuration);
 
+        Log.Logger = new LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information)
+            .WriteTo.File(
+                "logs/log-.txt",
+                rollingInterval: RollingInterval.Day,
+                outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} {CorrelationId} {Level:u3}] {Username} {Message:lj}{NewLine}{Exception}")
+            .Enrich.FromLogContext()
+            .CreateLogger();
+
         return builder;
     }
 
@@ -130,9 +74,11 @@ public static class ServiceExtensions
     {
         services.AddMcpServer()
             .WithHttpTransport()
-            .WithToolsFromAssembly();
+            .WithTools<CSharpCodeTools>();
 
-        services.AddSingleton<CSharpCodeService>();
+        services
+            .AddSerilog()
+            .AddSingleton<CSharpCodeService>();
 
         return services;
     }

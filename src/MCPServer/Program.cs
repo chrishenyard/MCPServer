@@ -1,5 +1,6 @@
 using McpServer;
 using McpServer.Configuration;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,7 +21,6 @@ builder
 var configuration = builder.Configuration;
 
 builder.Services
-    .AddTelemetry(configuration)
     .AddExceptionHandler<GlobalExceptionHandler>()
     .AddProblemDetails()
     .AddHttp(configuration)
@@ -29,8 +29,8 @@ builder.Services
 var app = builder.Build();
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 app.UseExceptionHandler();
+app.UseSerilogRequestLogging();
 app.MapMcp();
 
 await app.RunAsync();

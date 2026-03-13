@@ -3,6 +3,7 @@ using McpServer.Configuration;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseUrls("http://*:5000");
 
 builder.WebHost.UseKestrel(builder =>
 {
@@ -28,7 +29,6 @@ builder.Services
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
 app.MapMcp();

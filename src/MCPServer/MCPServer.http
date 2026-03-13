@@ -1,4 +1,4 @@
-@McpServer_HostAddress = https://localhost:7060
+@McpServer_HostAddress = http://localhost:5000
 
 ### Initialize request
 POST {{McpServer_HostAddress}}
@@ -51,9 +51,16 @@ Accept: application/json, text/event-stream
 POST {{McpServer_HostAddress}}
 Content-Type: application/json
 Accept: application/json, text/event-stream
+Mcp-Session-Id: 1
 {
-  "id": 1,
   "jsonrpc": "2.0",
-  "method": "notifications/initialized"
+  "method": "tools/call",
+  "params": {
+    "name": "search_local_repo",
+    "arguments": {
+      "prompt": "Find code that chunks c# files",
+      "topK": 10
+    }
+  }
 }
 

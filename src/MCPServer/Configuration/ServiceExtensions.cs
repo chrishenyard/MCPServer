@@ -72,6 +72,11 @@ public static class ServiceExtensions
 
     public static IServiceCollection AddServices(this IServiceCollection services)
     {
+        services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
+        });
+
         services.AddMcpServer()
             .WithHttpTransport()
             .WithTools<CSharpCodeTools>();

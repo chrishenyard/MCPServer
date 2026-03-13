@@ -9,7 +9,7 @@ public class CSharpCodeService(IHttpClientFactory httpClientFactory)
 {
     private readonly HttpClient _httpClient = httpClientFactory.CreateClient("CSharpCodeService");
 
-    public async Task<AskResponse> Ask(AskRequest req)
+    public async Task<AskResponse> SearchLocalRepo(AskRequest req)
     {
         var askResponse = new AskResponse(string.Empty, []);
         var todoItemJson = new StringContent(

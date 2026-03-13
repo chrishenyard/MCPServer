@@ -1,16 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace McpServer.Settings;
+﻿namespace McpServer.Settings;
 
 public class SeqSettings
 {
     public const string Section = "SeqSettings";
 
-    [Url]
-    [Required]
-    public required string ServerUrl { get; set; }
+    public string ServerUrl { get; set; } = null!;
 
-    [Required]
-    [StringLength(100, MinimumLength = 8)]
-    public required string ApiKey { get; set; }
+    public string ApiKey { get; set; } = null!;
 }

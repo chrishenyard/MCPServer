@@ -44,10 +44,7 @@ public static class ServiceExtensions
     public static IServiceCollection AddSettings(this IServiceCollection services)
     {
         services
-           .AddOptions<CSharpCodeSettings>()
-           .BindConfiguration(CSharpCodeSettings.Section)
-           .ValidateDataAnnotations()
-           .ValidateOnStart();
+           .AddOptions<CSharpCodeSettings>();
 
         return services;
     }

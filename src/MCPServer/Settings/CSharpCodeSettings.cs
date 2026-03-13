@@ -1,14 +1,10 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace McpServer.Settings;
+﻿namespace McpServer.Settings;
 
 public class CSharpCodeSettings
 {
     public const string Section = "CSharpCodeSettings";
 
-    [Url]
-    [Required]
-    public required string SearchEndpoint { get; set; }
+    public string SearchEndpoint { get; set; } = null!;
 
     public int TopK { get; set; }
 }

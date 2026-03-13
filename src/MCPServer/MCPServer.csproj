@@ -5,9 +5,11 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>6487fe4d-3e07-4411-9578-2c26eb2cce4c</UserSecretsId>
+	<PublishAot>true</PublishAot>
+	<RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
   </PropertyGroup>
 
-  <ItemGroup>
+<ItemGroup>
 	<PackageReference Include="Microsoft.AspNetCore.OpenApi" />
 	<PackageReference Include="Microsoft.Extensions.Http.Resilience" />
 	<PackageReference Include="ModelContextProtocol.AspNetCore" />

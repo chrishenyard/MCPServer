@@ -5,5 +5,85 @@ services:
       - ASPNETCORE_HTTP_PORTS=5000
     ports:
       - "5000"
+    networks:
+      - mcp_server_network
+    depends_on:
+      seq:
+        condition: service_started
+    user: "1654:1654"
+
+  keycloak.postgres:
+    image: postgres@sha256:f9c7b25fc2322844c270e7e07961fac8298d0cf100d67c50a7954592d3c9168b
+    container_name: keycloak.postgres
+    environment:
+      POSTGRES_DB: keycloakdb
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d keycloakdb -U keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    ports:
+      - "5432:5432"
+    networks:
+      - mcp_server_network
     volumes:
-      - ${APPDATA}/Microsoft/UserSecrets:/home/app/.microsoft/usersecrets:ro
+      - keycloak_postgres_data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
+    container_name: keycloak
+    command: ["start-dev"]
+    environment:
+      KC_HEALTH_ENABLED: true
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak.postgres:5432/keycloakdb
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: "${POSTGRES_PASSWORD}"
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_PROXY: edge
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak.postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - mcp_server_network
+
+  mailpit:
+    image: axllent/mailpit@sha256:c076638db1e15662150be4fb62b8a6e96ef6ba5bde90c838a0239225854830f7
+    container_name: mailpit
+    environment:
+      - MP_DATABASE=/data/mailpit.db
+      - MP_UI_AUTH=${MP_UI_AUTH}
+      - TZ=America/Phoenix
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    volumes:
+      - mailpit_data:/data
+    networks:
+      - mcp_server_network
+  seq:
+    image: datalust/seq:latest
+    ports:
+      - 5341:5341
+      - 8081:80
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORD=${SEQ_FIRSTRUN_ADMINPASSWORD}
+    networks:
+      - mcp_server_network
+    volumes:
+      - mcp_server_seq_data:/data
+    restart: always
+
+volumes:
+  keycloak_postgres_data:
+  mailpit_data:
+  mcp_server_seq_data:

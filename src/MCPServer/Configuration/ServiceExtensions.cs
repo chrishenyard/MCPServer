@@ -3,6 +3,8 @@ using McpServer.Services;
 using McpServer.Settings;
 using Microsoft.Extensions.Http.Resilience;
 using OpenTelemetry;
+using OpenTelemetry.Exporter;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Polly;
@@ -91,16 +93,34 @@ public static class ServiceExtensions
         return services;
     }
 
-    public static IServiceCollection AddTelemetry(this IServiceCollection services)
+    public static IServiceCollection AddTelemetry(
+        this IServiceCollection services,
+        IConfiguration config)
     {
+        var seqSettings = config
+            .GetSection("SeqSettings")
+            .Get<SeqSettings>()!;
+
         services.AddOpenTelemetry()
             .WithTracing(b => b.AddSource("*")
                 .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation())
+                .AddHttpClientInstrumentation()
+                .AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(seqSettings.ServerUrl);
+                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
+                }))
             .WithMetrics(b => b.AddMeter("*")
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation())
-            .WithLogging()
+            .WithLogging(logging => logging
+                .AddOtlpExporter(options =>
+                {
+                    options.Endpoint = new Uri(seqSettings.ServerUrl);
+                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
+                    options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
+                }))
             .UseOtlpExporter();
 
         return services;

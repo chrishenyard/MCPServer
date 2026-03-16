@@ -2,6 +2,9 @@
 using McpServer.Services;
 using McpServer.Settings;
 using Microsoft.Extensions.Http.Resilience;
+using OpenTelemetry;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Trace;
 using Polly;
 using Serilog;
 
@@ -84,6 +87,21 @@ public static class ServiceExtensions
         services
             .AddSerilog()
             .AddSingleton<CSharpCodeService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddTelemetry(this IServiceCollection services)
+    {
+        services.AddOpenTelemetry()
+            .WithTracing(b => b.AddSource("*")
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation())
+            .WithMetrics(b => b.AddMeter("*")
+                .AddAspNetCoreInstrumentation()
+                .AddHttpClientInstrumentation())
+            .WithLogging()
+            .UseOtlpExporter();
 
         return services;
     }

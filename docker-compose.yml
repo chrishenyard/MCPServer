@@ -1,0 +1,20 @@
+services:
+  mcpserver:
+    image: ${DOCKER_REGISTRY-}mcpserver:${VERSION}
+    build:
+      context: .
+      dockerfile: src/McpServer/Dockerfile
+      args:
+        - AUTHORS=${AUTHORS}
+        - VERSION=${VERSION}
+        - TITLE=${TITLE}
+        - DESCRIPTION=${DESCRIPTION}
+        - BUILD_DATE=${BUILD_DATE}
+    ports:
+      - 5000:5000
+    networks:
+      - mcp_server_network
+
+networks:
+  mcp_server_network:
+    driver: bridge

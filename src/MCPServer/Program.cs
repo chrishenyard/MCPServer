@@ -26,12 +26,15 @@ builder.Services
     .AddProblemDetails()
     .AddHttp(configuration)
     .AddServices()
+    .AddAuth(configuration)
     .AddTelemetry(configuration);
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
+app.UseAuthentication();
+app.UseAuthorization();
 app.MapMcp()
     .RequireAuthorization();
 

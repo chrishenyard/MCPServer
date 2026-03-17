@@ -1,7 +1,9 @@
 ﻿using McpServer.McpTools;
 using McpServer.Services;
 using McpServer.Settings;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Http.Resilience;
+using Microsoft.IdentityModel.Tokens;
 using OpenTelemetry;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
@@ -90,6 +92,35 @@ public static class ServiceExtensions
         services
             .AddSerilog()
             .AddSingleton<CSharpCodeService>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddAuth(
+        this IServiceCollection services,
+        IConfiguration config)
+    {
+        var keycloakSettings = config
+            .GetSection(KeycloakSettings.Section)
+            .Get<KeycloakSettings>()!;
+
+        services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(options =>
+            {
+                options.Authority = keycloakSettings.Authority;
+                options.Audience = keycloakSettings.Audience;
+                options.RequireHttpsMetadata = keycloakSettings.RequireHttpsMetadata;
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                };
+            });
+
+        services.AddAuthorization();
 
         return services;
     }

@@ -22,11 +22,11 @@ builder
 var configuration = builder.Configuration;
 
 builder.Services
+    .AddAuth(configuration)
     .AddExceptionHandler<GlobalExceptionHandler>()
     .AddProblemDetails()
     .AddHttp(configuration)
     .AddServices()
-    .AddAuth(configuration)
     .AddTelemetry(configuration);
 
 var app = builder.Build();

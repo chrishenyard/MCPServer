@@ -84,6 +84,7 @@ public static class ServiceExtensions
 
         services.AddMcpServer()
             .WithHttpTransport()
+            .AddAuthorizationFilters()
             .WithTools<CSharpCodeTools>();
 
         services

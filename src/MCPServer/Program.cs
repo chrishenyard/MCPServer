@@ -25,13 +25,15 @@ builder.Services
     .AddExceptionHandler<GlobalExceptionHandler>()
     .AddProblemDetails()
     .AddHttp(configuration)
-    .AddServices();
+    .AddServices()
+    .AddTelemetry(configuration);
 
 var app = builder.Build();
 
 app.UseExceptionHandler();
 app.UseSerilogRequestLogging();
-app.MapMcp();
+app.MapMcp()
+    .RequireAuthorization();
 
 await app.RunAsync();
 

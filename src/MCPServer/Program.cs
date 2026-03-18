@@ -14,6 +14,11 @@ builder.Host
     .UseDefaultServiceProvider((context, options) =>
     {
         options.ValidateOnBuild = true;
+    })
+    .UseSerilog((context, configuration) =>
+    {
+        configuration
+            .ReadFrom.Configuration(context.Configuration);
     });
 
 builder

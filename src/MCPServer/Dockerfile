@@ -1,17 +1,15 @@
-# See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
-
-ARG LAUNCHING_FROM_VS
-ARG FINAL_BASE_IMAGE=${LAUNCHING_FROM_VS:+aotdebug}
-
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
-USER $APP_UID
 WORKDIR /app
+USER $APP_UID
 EXPOSE 5000
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    clang zlib1g-dev
+ARG AUTHORS
+ARG VERSION
+ARG TITLE
+ARG DESCRIPTION
+ARG BUILD_DATE
+
+FROM mcr.microsoft.com/dotnet/sdk@sha256:c7445f141c04f1a6b454181bd098dcfa606c61ba0bd213d0a702489e5bd4cd71 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Directory.Packages.props", "."]
@@ -25,15 +23,16 @@ FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "./McpServer.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=true
 
-FROM base AS aotdebug
-USER root
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    gdb
-USER app
-
-FROM ${FINAL_BASE_IMAGE:-mcr.microsoft.com/dotnet/runtime-deps:10.0} AS final
+FROM base AS final
 WORKDIR /app
-EXPOSE 5000
 COPY --from=publish /app/publish .
-ENTRYPOINT ["./McpServer"]
+
+LABEL \
+    org.opencontainers.image.created="${BUILD_DATE}" \
+    org.opencontainers.image.authors="${AUTHORS}" \
+    org.opencontainers.image.title="${TITLE}" \
+    org.opencontainers.image.description="${DESCRIPTION}" \
+    org.opencontainers.image.version="${VERSION}" \
+    org.opencontainers.image.licenses="Apache-2.0"
+
+ENTRYPOINT ["dotnet", "McpServer.dll"]

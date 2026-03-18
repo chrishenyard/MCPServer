@@ -9,6 +9,6 @@
   <Project Path="docker-compose.dcproj">
     <Build />
   </Project>
-  <Project Path="src/MCPClient/MCPClient.csproj" Id="90748ce3-c413-47ac-9900-c57f7427f6a9" />
+  <Project Path="src/McpClient/McpClient.csproj" Id="90748ce3-c413-47ac-9900-c57f7427f6a9" DisplayName="McpClient" />
   <Project Path="src/McpServer/McpServer.csproj" />
 </Solution>

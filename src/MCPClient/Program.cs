@@ -51,7 +51,7 @@ static async Task<string?> HandleAuthorizationUrlAsync(Uri authorizationUrl, Uri
     Console.WriteLine($"Opening browser to: {authorizationUrl}");
 
     //var listenerPrefix = redirectUri.GetLeftPart(UriPartial.Authority);
-    var listenerPrefix = redirectUri.Scheme + "://" + redirectUri.Host + ":9000/";
+    var listenerPrefix = redirectUri.Scheme + "://" + redirectUri.Host + ":5001/";
     if (!listenerPrefix.EndsWith("/")) listenerPrefix += "/";
 
     using var listener = new HttpListener();
@@ -125,6 +125,3 @@ static void OpenBrowser(Uri url)
         Console.WriteLine($"Please manually open this URL: {url}");
     }
 }
-
-
-

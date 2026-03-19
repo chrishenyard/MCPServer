@@ -41,58 +41,16 @@ public static class AuthExtensions
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
-                options.Authority = keycloakSettings.Authority;
                 options.RequireHttpsMetadata = keycloakSettings.RequireHttpsMetadata;
                 options.Audience = keycloakSettings.Audience;
-                options.SaveToken = false;
+                options.MetadataAddress = keycloakSettings.MetadataAddress;
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
                     ValidIssuer = keycloakSettings.Authority,
-
                     ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-
-                    AudienceValidator = (audiences, token, parameters) =>
-                    {
-                        if (audiences is null)
-                        {
-                            return false;
-                        }
-
-                        foreach (var aud in audiences)
-                        {
-                            if (string.IsNullOrWhiteSpace(aud))
-                            {
-                                continue;
-                            }
-
-                            var normalizedAud = aud.TrimEnd('/');
-
-                            // Accept the MCP server URL as audience.
-                            if (string.Equals(
-                                normalizedAud,
-                                normalizedServerUrl,
-                                StringComparison.OrdinalIgnoreCase))
-                            {
-                                return true;
-                            }
-
-                            // Optionally accept an explicit configured audience too.
-                            if (!string.IsNullOrWhiteSpace(keycloakSettings.Audience) &&
-                                string.Equals(
-                                    aud,
-                                    keycloakSettings.Audience,
-                                    StringComparison.OrdinalIgnoreCase))
-                            {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    }
+                    ValidateLifetime = true
                 };
 
                 options.Events = new JwtBearerEvents
@@ -103,7 +61,7 @@ public static class AuthExtensions
                             .GetRequiredService<ILoggerFactory>()
                             .CreateLogger("JwtBearer");
 
-                        logger.LogWarning(
+                        logger.LogDebug(
                             context.Exception,
                             "JWT authentication failed. Path: {Path}",
                             context.HttpContext.Request.Path);
@@ -116,7 +74,7 @@ public static class AuthExtensions
                             .GetRequiredService<ILoggerFactory>()
                             .CreateLogger("JwtBearer");
 
-                        logger.LogInformation(
+                        logger.LogDebug(
                             "JWT challenge triggered. Path: {Path}, Error: {Error}, Description: {Description}",
                             context.HttpContext.Request.Path,
                             context.Error,
@@ -130,10 +88,32 @@ public static class AuthExtensions
                             .GetRequiredService<ILoggerFactory>()
                             .CreateLogger("JwtBearer");
 
-                        logger.LogInformation(
+                        logger.LogDebug(
                             "JWT token validated successfully. Subject: {Subject}",
                             context.Principal?.Identity?.Name ?? "(unknown)");
 
+                        return Task.CompletedTask;
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtBearer");
+
+                        logger.LogDebug(
+                            "JWT message received. Path: {Path}, QueryString: {QueryString}",
+                            context.HttpContext.Request.Path,
+                            context.HttpContext.Request.QueryString);
+                        return Task.CompletedTask;
+                    },
+                    OnForbidden = context =>
+                    {
+                        var logger = context.HttpContext.RequestServices
+                            .GetRequiredService<ILoggerFactory>()
+                            .CreateLogger("JwtBearer");
+                        logger.LogDebug(
+                            "JWT forbidden response triggered. Path: {Path}",
+                            context.HttpContext.Request.Path);
                         return Task.CompletedTask;
                     }
                 };

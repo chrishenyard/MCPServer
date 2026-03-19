@@ -16,4 +16,6 @@ public sealed class KeycloakSettings
 
     public string ClientId { get; set; } = string.Empty;
     public string? ClientSecret { get; set; }
+
+    public string MetadataAddress { get; set; } = string.Empty;
 }

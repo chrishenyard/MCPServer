@@ -1,13 +1,11 @@
 ﻿using McpServer.McpTools;
 using McpServer.Services;
 using McpServer.Settings;
-using Microsoft.Extensions.Http.Resilience;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Polly;
 using Serilog;
 
 namespace McpServer.Configuration;
@@ -26,19 +24,7 @@ public static class ServiceExtensions
         {
             client.BaseAddress = new Uri(settings.SearchEndpoint);
         })
-        .AddResilienceHandler("custom-pipeline", builder =>
-        {
-            builder.AddRetry(new HttpRetryStrategyOptions
-            {
-                MaxRetryAttempts = 3,
-                Delay = TimeSpan.FromSeconds(1),
-                BackoffType = DelayBackoffType.Exponential
-            })
-            .AddTimeout(new HttpTimeoutStrategyOptions
-            {
-                Timeout = TimeSpan.FromSeconds(5) // Max duration for each attempt
-            });
-        });
+        .AddStandardResilienceHandler();
 
         return services;
     }

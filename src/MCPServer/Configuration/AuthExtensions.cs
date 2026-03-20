@@ -45,6 +45,7 @@ public static class AuthExtensions
                 options.RequireHttpsMetadata = keycloakSettings.RequireHttpsMetadata;
                 options.Audience = keycloakSettings.Audience;
                 options.MetadataAddress = keycloakSettings.MetadataAddress;
+                options.SaveToken = false; // We don't need to save the token in the authentication properties.
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {

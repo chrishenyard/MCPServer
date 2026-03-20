@@ -1,6 +1,5 @@
 ﻿using McpServer.Models;
 using McpServer.Services;
-using Microsoft.AspNetCore.Authorization;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Text.Json;
@@ -9,7 +8,6 @@ using System.Text.Json.Serialization;
 namespace McpServer.McpTools;
 
 [McpServerToolType]
-[Authorize]
 public class CSharpCodeTools
 {
     /*

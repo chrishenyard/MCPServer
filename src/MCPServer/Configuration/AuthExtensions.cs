@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore.Authentication;
+using System.Text;
 
 namespace McpServer.Configuration;
 
@@ -50,7 +51,9 @@ public static class AuthExtensions
                     ValidateIssuer = true,
                     ValidIssuer = keycloakSettings.Authority,
                     ValidateAudience = true,
-                    ValidateLifetime = true
+                    ValidateLifetime = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(keycloakSettings.ClientSecret!))
                 };
 
                 options.Events = new JwtBearerEvents

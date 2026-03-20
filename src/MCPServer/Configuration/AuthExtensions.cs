@@ -43,16 +43,17 @@ public static class AuthExtensions
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
                 options.RequireHttpsMetadata = keycloakSettings.RequireHttpsMetadata;
-                options.Audience = keycloakSettings.Audience;
                 options.MetadataAddress = keycloakSettings.MetadataAddress;
                 options.SaveToken = false; // We don't need to save the token in the authentication properties.
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
-                    ValidIssuer = keycloakSettings.Authority,
                     ValidateAudience = true,
                     ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidAudience = keycloakSettings.Audience,
+                    ValidIssuer = keycloakSettings.Authority,
                     IssuerSigningKey = new SymmetricSecurityKey(
                         Encoding.UTF8.GetBytes(keycloakSettings.ClientSecret!))
                 };

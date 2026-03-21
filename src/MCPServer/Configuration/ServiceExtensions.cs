@@ -6,7 +6,6 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
-using Serilog;
 
 namespace McpServer.Configuration;
 
@@ -64,7 +63,6 @@ public static class ServiceExtensions
             .WithTools<CSharpCodeTools>();
 
         services
-            .AddSerilog()
             .AddSingleton<CSharpCodeService>();
 
         return services;
@@ -76,29 +74,53 @@ public static class ServiceExtensions
     {
         var seqSettings = config.GetSection("SeqSettings")
             .Get<SeqSettings>()!;
+        var baseUri = new Uri(seqSettings.ServerUrl);
+        var app = services.BuildServiceProvider();
+        var hostEnvironment = app.GetRequiredService<IHostEnvironment>();
+        var environment = hostEnvironment.IsDevelopment() ? "development" : "production";
+
+        services.AddLogging(logging => logging.AddOpenTelemetry(options =>
+        {
+            options.SetResourceBuilder(
+                ResourceBuilder.CreateEmpty()
+                    .AddService("McpServer")
+                    .AddAttributes(new Dictionary<string, object>
+                    {
+                        ["deployment.environment"] = environment
+                    }));
+
+            options.IncludeScopes = true;
+            options.IncludeFormattedMessage = true;
+
+            options.AddOtlpExporter(exporter =>
+            {
+                exporter.Endpoint = new Uri(baseUri, "/ingest/otlp/v1/logs");
+                exporter.Protocol = OtlpExportProtocol.HttpProtobuf;
+                exporter.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
+            });
+
+            options.AddConsoleExporter();
+        }));
 
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource.AddService("McpServer"))
             .WithMetrics(metrics => metrics
+                .AddHttpClientInstrumentation()
                 .AddAspNetCoreInstrumentation()
+                .AddConsoleExporter()
                 .AddOtlpExporter(options =>
                 {
-                    options.Endpoint = new Uri(seqSettings.ServerUrl);
+                    options.Endpoint = new Uri(baseUri, "/ingest/otlp/v1/metrics");
                     options.Protocol = OtlpExportProtocol.HttpProtobuf;
                     options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
                 }))
             .WithTracing(tracing => tracing
+                .AddHttpClientInstrumentation()
                 .AddAspNetCoreInstrumentation()
+                .AddConsoleExporter()
                 .AddOtlpExporter(options =>
                 {
-                    options.Endpoint = new Uri(seqSettings.ServerUrl);
-                    options.Protocol = OtlpExportProtocol.HttpProtobuf;
-                    options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
-                }))
-            .WithLogging(logging => logging
-                .AddOtlpExporter(options =>
-                {
-                    options.Endpoint = new Uri(seqSettings.ServerUrl);
+                    options.Endpoint = new Uri(baseUri, "/ingest/otlp/v1/traces");
                     options.Protocol = OtlpExportProtocol.HttpProtobuf;
                     options.Headers = $"X-Seq-ApiKey={seqSettings.ApiKey}";
                 }));

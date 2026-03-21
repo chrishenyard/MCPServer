@@ -5,6 +5,7 @@
     <File Path="Docker-Compose-Down.ps1" />
     <File Path="Docker-Compose-Up.ps1" />
     <File Path="README.md" />
+    <File Path="mcp_server-realm.json" />
   </Folder>
   <Project Path="docker-compose.dcproj">
     <Build />

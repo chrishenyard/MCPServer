@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore.Authentication;
+using System.Security.Claims;
 using System.Text;
 
 namespace McpServer.Configuration;
@@ -55,7 +56,8 @@ public static class AuthExtensions
                     ValidAudience = keycloakSettings.Audience,
                     ValidIssuer = keycloakSettings.Authority,
                     IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(keycloakSettings.ClientSecret!))
+                        Encoding.UTF8.GetBytes(keycloakSettings.ClientSecret!)),
+                    RoleClaimType = "scope"
                 };
 
                 options.Events = new JwtBearerEvents
@@ -92,6 +94,25 @@ public static class AuthExtensions
                         var logger = context.HttpContext.RequestServices
                             .GetRequiredService<ILoggerFactory>()
                             .CreateLogger("JwtBearer");
+
+                        var identity = context.Principal?.Identity as ClaimsIdentity;
+
+                        if (identity is not null)
+                        {
+                            var scopeClaims = identity.FindAll("scope").ToList();
+
+                            foreach (var scopeClaim in scopeClaims)
+                            {
+                                var scopes = scopeClaim.Value.Split(
+                                    ' ',
+                                    StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                                foreach (var scope in scopes)
+                                {
+                                    identity.AddClaim(new Claim(identity.RoleClaimType, scope));
+                                }
+                            }
+                        }
 
                         logger.LogDebug(
                             "JWT token validated successfully. Subject: {Subject}",

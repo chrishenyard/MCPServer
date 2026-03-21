@@ -1,5 +1,6 @@
 ﻿using McpServer.Models;
 using McpServer.Services;
+using Microsoft.AspNetCore.Authorization;
 using ModelContextProtocol.Server;
 using System.ComponentModel;
 using System.Text.Json;
@@ -8,6 +9,7 @@ using System.Text.Json.Serialization;
 namespace McpServer.McpTools;
 
 [McpServerToolType]
+[Authorize(Roles = "mcp:tools")]
 public class CSharpCodeTools
 {
     /*
@@ -38,6 +40,15 @@ public class CSharpCodeTools
 
         var askResponse = await codeService.SearchLocalRepo(askRequest, token);
         return JsonSerializer.Serialize(askResponse, AppJsonSerializerContext.Default.AskResponse);
+    }
+
+    [McpServerTool(Name = "echo", Title = "Echo")]
+    [Description("A simple tool that echoes back the input. Useful for testing connectivity and latency.")]
+    public static async Task<string> Echo(
+        [Description("The input to echo back")] string input)
+    {
+        await Task.Yield();
+        return input;
     }
 }
 

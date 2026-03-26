@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 using ModelContextProtocol.AspNetCore.Authentication;
+using Serilog;
+using System.Diagnostics;
 using System.Security.Claims;
-using System.Text;
 
 namespace McpServer.Configuration;
 
@@ -30,33 +31,33 @@ public static class AuthExtensions
             throw new InvalidOperationException("Keycloak ServerUrl is required.");
         }
 
-        var normalizedServerUrl = keycloakSettings.ServerUrl.TrimEnd('/');
-
         services
             .AddAuthentication(options =>
             {
-                // JWT validates the incoming access token.
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
 
-                // MCP handles the challenge so VS Code can discover auth metadata.
+                // Let MCP expose auth metadata/challenge behavior.
                 options.DefaultChallengeScheme = McpAuthenticationDefaults.AuthenticationScheme;
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
             {
                 options.RequireHttpsMetadata = keycloakSettings.RequireHttpsMetadata;
+                options.Authority = keycloakSettings.Authority;
                 options.MetadataAddress = keycloakSettings.MetadataAddress;
-                options.SaveToken = false; // We don't need to save the token in the authentication properties.
+                options.SaveToken = false;
+                options.BackchannelHttpHandler = new BackChannelListener();
 
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
+                    ValidIssuer = keycloakSettings.Authority,
+
                     ValidateAudience = true,
+                    ValidAudience = keycloakSettings.Audience,
+
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
-                    ValidAudience = keycloakSettings.Audience,
-                    ValidIssuer = keycloakSettings.Authority,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(keycloakSettings.ClientSecret!)),
+                    NameClaimType = "preferred_username",
                     RoleClaimType = "scope"
                 };
 
@@ -120,18 +121,6 @@ public static class AuthExtensions
 
                         return Task.CompletedTask;
                     },
-                    OnMessageReceived = context =>
-                    {
-                        var logger = context.HttpContext.RequestServices
-                            .GetRequiredService<ILoggerFactory>()
-                            .CreateLogger("JwtBearer");
-
-                        logger.LogDebug(
-                            "JWT message received. Path: {Path}, QueryString: {QueryString}",
-                            context.HttpContext.Request.Path,
-                            context.HttpContext.Request.QueryString);
-                        return Task.CompletedTask;
-                    },
                     OnForbidden = context =>
                     {
                         var logger = context.HttpContext.RequestServices
@@ -146,7 +135,6 @@ public static class AuthExtensions
             })
             .AddMcp(options =>
             {
-                // This metadata tells VS Code / MCP clients where authorization lives.
                 options.ResourceMetadata = new()
                 {
                     Resource = keycloakSettings.ServerUrl,
@@ -164,8 +152,60 @@ public static class AuthExtensions
         services.AddAuthorizationBuilder()
             .SetFallbackPolicy(new AuthorizationPolicyBuilder()
                 .RequireAuthenticatedUser()
-                .Build());
+                .Build())
+            .AddPolicy("McpTools", policy =>
+            {
+                policy.RequireAuthenticatedUser();
+                policy.RequireAssertion(context =>
+                {
+                    var scopeClaims = context.User.FindAll("scope").Select(c => c.Value);
+
+                    return scopeClaims
+                        .SelectMany(v => v.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        .Contains("mcp:tools");
+                });
+            });
 
         return services;
+    }
+}
+
+// Source - https://stackoverflow.com/a/79287062
+// Posted by Tore Nestenius
+// Retrieved 2026-03-25, License - CC BY-SA 4.0
+
+public class BackChannelListener : DelegatingHandler
+{
+    public BackChannelListener() : base(new HttpClientHandler())
+    {
+    }
+
+    protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
+                                                                 CancellationToken token)
+    {
+        var sw = new Stopwatch();
+        sw.Start();
+
+        try
+        {
+            var result = await base.SendAsync(request, token);
+            sw.Stop();
+
+            Log.Logger.ForContext("SourceContext", "BackChannelListener")
+                       .Information($"### BackChannel request to {request?.RequestUri?.AbsoluteUri} took {sw.ElapsedMilliseconds.ToString()} ms");
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Log.Logger.ForContext("SourceContext", "BackChannelListener")
+                       .Error(ex, $"### BackChannel request to {request?.RequestUri?.AbsoluteUri} failed after {sw.ElapsedMilliseconds.ToString()} ms with exception: {ex.Message}");
+        }
+
+        return new HttpResponseMessage(System.Net.HttpStatusCode.InternalServerError)
+        {
+            RequestMessage = request,
+            Content = new StringContent("An error occurred while processing the backchannel request.")
+        };
     }
 }

@@ -35,12 +35,13 @@ services:
       retries: 5
       start_period: 5s
     ports:
-      - "5432:5432"
+      - "5433:5432"
     networks:
       - mcp_server_network
     volumes:
       - keycloak_postgres_data:/var/lib/postgresql/data
-
+      - ./imports/mcp_server-realm.json:/tmp/mcp_server-realm.json:ro
+ 
   keycloak:
     image: quay.io/keycloak/keycloak@sha256:9409c59bdfb65dbffa20b11e6f18b8abb9281d480c7ca402f51ed3d5977e6007
     container_name: keycloak
@@ -59,7 +60,7 @@ services:
       KC_PROXY: edge
       KC_LOG_LEVEL: INFO
     ports:
-      - "8080:8080"
+      - "8090:8080"
     depends_on:
       keycloak.postgres:
         condition: service_healthy
@@ -67,6 +68,8 @@ services:
         condition: service_started
     networks:
       - mcp_server_network
+    volumes:
+      - ./mcp_server-realm.json:/opt/keycloak/data/import/mcp_server-realm.json:ro
 
   mailpit:
     image: axllent/mailpit@sha256:c076638db1e15662150be4fb62b8a6e96ef6ba5bde90c838a0239225854830f7
@@ -85,8 +88,8 @@ services:
   seq:
     image: datalust/seq:latest
     ports:
-      - 5341:5341
-      - 8081:80
+      - 5342:5341
+      - 8082:80
     environment:
       - ACCEPT_EULA=Y
       - SEQ_FIRSTRUN_ADMINPASSWORD=${SEQ_FIRSTRUN_ADMINPASSWORD}

@@ -10,6 +10,7 @@ namespace McpServer.McpTools;
 
 [McpServerToolType]
 [Authorize(Roles = "mcp:tools")]
+
 public class CSharpCodeTools
 {
     /*

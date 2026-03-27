@@ -18,8 +18,8 @@ public static class AuthExtensions
         var keycloakSettings = config
             .GetSection(KeycloakSettings.Section)
             .Get<KeycloakSettings>()
-            ?? throw new InvalidOperationException(
-                $"Missing configuration section '{KeycloakSettings.Section}'.");
+                ?? throw new InvalidOperationException(
+                    $"Missing configuration section '{KeycloakSettings.Section}'.");
 
         if (string.IsNullOrWhiteSpace(keycloakSettings.Authority))
         {
@@ -35,8 +35,6 @@ public static class AuthExtensions
             .AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-
-                // Let MCP expose auth metadata/challenge behavior.
                 options.DefaultChallengeScheme = McpAuthenticationDefaults.AuthenticationScheme;
             })
             .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
